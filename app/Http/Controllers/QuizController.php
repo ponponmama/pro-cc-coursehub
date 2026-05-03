@@ -24,8 +24,8 @@ class QuizController extends Controller
         $answers = $request->input('answers', []);
 
         $correctCount = 0;
-        foreach ($quiz->questions as $question) {
-            $userAnswer = collect($answers)->firstWhere('question_id', $question->id);
+        foreach ($quiz->questions->sortBy('order')->values() as $index => $question) {
+            $userAnswer = $answers[$index] ?? null;
             $selectedOption = Option::find($userAnswer['option_id']);
             if ($selectedOption && $selectedOption->is_correct) {
                 $correctCount++;
