@@ -23,6 +23,41 @@
             <p class="text-sm text-gray-500 mt-1">合格点: {{ $quiz->passing_score }}%</p>
         </div>
 
+        {{-- 受験履歴 --}}
+        @if($submissions->count() > 1)
+        <div class="mb-6">
+            <h2 class="text-base font-semibold text-gray-700 mb-3">受験履歴</h2>
+            <div class="overflow-hidden rounded-xl border border-gray-200">
+                <table class="min-w-full divide-y divide-gray-200 text-sm">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left font-medium text-gray-500">受験日時</th>
+                            <th class="px-4 py-2 text-right font-medium text-gray-500">スコア</th>
+                            <th class="px-4 py-2 text-center font-medium text-gray-500">判定</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-100">
+                        @foreach($submissions as $attempt)
+                        <tr>
+                            <td class="px-4 py-2 text-gray-600">{{ $attempt->submitted_at->format('Y/m/d H:i') }}</td>
+                            <td class="px-4 py-2 text-right font-medium {{ $attempt->score >= $quiz->passing_score ? 'text-green-600' : 'text-red-600' }}">
+                                {{ $attempt->score }}%
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                                @if($attempt->score >= $quiz->passing_score)
+                                    <span class="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">合格</span>
+                                @else
+                                    <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">不合格</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
         {{-- 解答詳細 --}}
         @php
             $userAnswers = collect($submission->answers);
@@ -56,8 +91,16 @@
         </div>
 
         <div class="mt-8 flex flex-wrap gap-3">
-            <a href="{{ route('courses.quizzes.show', [$course, $quiz]) }}" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg px-4 py-2.5 shadow-sm transition-all duration-150">再受験する</a>
-            <a href="{{ route('courses.show', $course) }}" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg px-4 py-2.5 transition-all duration-150">コースに戻る</a>
+            @unless($hasPassed)
+                <a href="{{ route('courses.quizzes.show', [$course, $quiz]) }}"
+                   class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg px-4 py-2.5 shadow-sm transition-all duration-150">
+                    再受験する
+                </a>
+            @endunless
+            <a href="{{ route('courses.show', $course) }}"
+               class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium rounded-lg px-4 py-2.5 transition-all duration-150">
+                コースに戻る
+            </a>
         </div>
     </div>
 </div>

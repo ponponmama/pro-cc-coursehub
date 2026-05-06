@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Course;
 use App\Models\Enrollment;
 use App\Models\Quiz;
+use App\Models\Submission;
 use App\Models\User;
 
 class SubmissionPolicy
@@ -15,9 +16,16 @@ class SubmissionPolicy
             return false;
         }
 
-        return Enrollment::where('user_id', $user->id)
-            ->where('course_id', $course->id)
-            ->where('status', 'active')
+        if (!Enrollment::where('user_id', $user->id)
+                ->where('course_id', $course->id)
+                ->where('status', 'active')
+                ->exists()) {
+            return false;
+        }
+
+        return !Submission::where('user_id', $user->id)
+            ->where('quiz_id', $quiz->id)
+            ->where('score', '>=', $quiz->passing_score)
             ->exists();
     }
 }

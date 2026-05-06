@@ -14,6 +14,19 @@ class QuizController extends Controller
     {
         $this->authorize('view', $course);
 
+        if (auth()->user()->role === 'student') {
+            $hasPassed = Submission::where('user_id', auth()->id())
+                ->where('quiz_id', $quiz->id)
+                ->where('score', '>=', $quiz->passing_score)
+                ->exists();
+
+            if ($hasPassed) {
+                return redirect()
+                    ->route('courses.quizzes.result', [$course, $quiz])
+                    ->with('info', 'すでに合格しています。');
+            }
+        }
+
         $quiz->load('questions.options');
 
         return view('quizzes.show', compact('course', 'quiz'));
@@ -21,24 +34,29 @@ class QuizController extends Controller
 
     public function submit(Request $request, Course $course, Quiz $quiz)
     {
+        $this->authorize('submit', [Submission::class, $quiz, $course]);
+
         $answers = $request->input('answers', []);
+
+        $quiz->load('questions');
 
         $correctCount = 0;
         foreach ($quiz->questions as $question) {
             $userAnswer = collect($answers)->firstWhere('question_id', $question->id);
-            $selectedOption = Option::find($userAnswer['option_id']);
+            $selectedOption = Option::find($userAnswer['option_id'] ?? null);
             if ($selectedOption && $selectedOption->is_correct) {
                 $correctCount++;
             }
         }
 
-        $score = (int) round($correctCount / $quiz->questions->count() * 100);
+        $total = $quiz->questions->count();
+        $score = $total > 0 ? (int) round($correctCount / $total * 100) : 0;
 
-        $submission = Submission::create([
-            'user_id' => auth()->id(),
-            'quiz_id' => $quiz->id,
-            'score' => $score,
-            'answers' => $answers,
+        Submission::create([
+            'user_id'      => auth()->id(),
+            'quiz_id'      => $quiz->id,
+            'score'        => $score,
+            'answers'      => $answers,
             'submitted_at' => now(),
         ]);
 
@@ -51,11 +69,19 @@ class QuizController extends Controller
 
         $quiz->load('questions.options');
 
-        $submission = Submission::where('user_id', auth()->id())
+        $submissions = Submission::where('user_id', auth()->id())
             ->where('quiz_id', $quiz->id)
-            ->latest()
-            ->firstOrFail();
+            ->latest('submitted_at')
+            ->get();
 
-        return view('quizzes.result', compact('course', 'quiz', 'submission'));
+        abort_if($submissions->isEmpty(), 404);
+
+        $submission = $submissions->first();
+
+        $hasPassed = $submissions->contains(
+            fn ($s) => $s->score >= $quiz->passing_score
+        );
+
+        return view('quizzes.result', compact('course', 'quiz', 'submission', 'submissions', 'hasPassed'));
     }
 }
