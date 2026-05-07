@@ -11,6 +11,7 @@ use App\Models\LessonProgress;
 use App\Models\Option;
 use App\Models\Question;
 use App\Models\Quiz;
+use App\Models\Review;
 use App\Models\Submission;
 use App\Models\Tag;
 use App\Models\User;
@@ -520,6 +521,20 @@ class DatabaseSeeder extends Seeder
                     $submissionCount++;
                     if ($submissionCount >= 50) break 2;
                 }
+            }
+
+            // ================================================================
+            // 10. Reviews (~20)
+            // ================================================================
+            $completedEnrollments = $enrollments->where('status', 'completed');
+
+            foreach ($completedEnrollments->shuffle()->take(20) as $enrollment) {
+                Review::create([
+                    'user_id'   => $enrollment->user_id,
+                    'course_id' => $enrollment->course_id,
+                    'rating'    => fake()->numberBetween(3, 5),
+                    'comment'   => fake()->optional(0.7)->sentence(),
+                ]);
             }
 
             // Bug 3-4-1: Guarantee failing submissions

@@ -2,15 +2,13 @@
 
 namespace App\Http\Requests;
 
-use App\Models\Course;
-use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreCoachCourseRequest extends FormRequest
+class UpdateCoachCourseRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', Course::class);
+        return $this->user()->can('update', $this->route('course'));
     }
 
     public function rules(): array
@@ -20,11 +18,9 @@ class StoreCoachCourseRequest extends FormRequest
             'category_id' => ['required', 'exists:categories,id'],
             'description' => ['required', 'string'],
             'difficulty'  => ['required', 'in:beginner,intermediate,advanced'],
-            'status'      => ['required', 'in:draft,published'],
-            'image'       => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:2048'],
+            'status'      => ['required', 'in:draft,published,archived'],
             'tags'        => ['nullable', 'array'],
             'tags.*'      => ['exists:tags,id'],
-            'new_tags'    => ['nullable', 'string'],
         ];
     }
 
@@ -40,24 +36,8 @@ class StoreCoachCourseRequest extends FormRequest
             'difficulty.in'        => '難易度の値が不正です。',
             'status.required'      => '公開ステータスを選択してください。',
             'status.in'            => '公開ステータスの値が不正です。',
-            'image.image'          => '画像ファイルを選択してください。',
-            'image.mimes'          => '画像はjpeg,png,jpg,gif形式のみアップロードできます。',
-            'image.max'            => '画像サイズは2MB以内にしてください。',
             'tags.array'           => 'タグの形式が不正です。',
             'tags.*.exists'        => '選択されたタグは存在しません。',
         ];
-    }
-
-    public function withValidator(Validator $validator): void
-    {
-        $validator->after(function (Validator $v) {
-            $exists = Course::where('user_id', $this->user()->id)
-                ->where('title', $this->input('title'))
-                ->exists();
-
-            if ($exists) {
-                $v->errors()->add('title', '同じタイトルのコースが既に存在します。');
-            }
-        });
     }
 }
