@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Course;
 use App\Models\Category;
+use App\Models\Course;
+use App\Models\Review;
 use Illuminate\Http\Request;
 
 class CourseController extends Controller
@@ -51,6 +52,9 @@ class CourseController extends Controller
                 ->first();
         }
 
-        return view('courses.show', compact('course', 'enrollment'));
+        $reviews = $course->reviews()->with('user')->latest()->get();
+        $canReview = auth()->user()->can('create', [Review::class, $course]);
+
+        return view('courses.show', compact('course', 'enrollment', 'reviews', 'canReview'));
     }
 }
