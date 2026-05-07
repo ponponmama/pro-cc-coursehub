@@ -131,7 +131,7 @@ class CourseTest extends TestCase
 
     public function test_course_list_can_be_filtered_by_category(): void
     {
-        $otherCategory = Category::factory()->create();
+        $otherCategory = Category::factory()->create(['slug' => 'other-' . uniqid()]);
 
         Course::factory()->create([
             'user_id' => $this->coach->id,
