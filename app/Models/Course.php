@@ -65,7 +65,11 @@ class Course extends Model
 
     public function getAllLessonIds(): array
     {
-        return Lesson::whereIn('chapter_id', $this->chapters()->pluck('id'))
+        $chapters = $this->relationLoaded('chapters')
+            ? $this->chapters
+            : $this->chapters()->with('lessons')->get();
+
+        return $chapters->flatMap->lessons
             ->where('is_published', true)
             ->pluck('id')
             ->toArray();
@@ -73,11 +77,17 @@ class Course extends Model
 
     public function getProgressRate($userId): int
     {
-        $totalLessons = $this->chapters()->withCount('lessons')->get()
-            ->sum('lessons_count');
+        if ($this->relationLoaded('chapters')) {
+            $allLessons   = $this->chapters->flatMap->lessons;
+            $totalLessons = $allLessons->count();
+            $lessonIds    = $allLessons->where('is_published', true)->pluck('id');
+        } else {
+            $totalLessons = $this->chapters()->withCount('lessons')->get()->sum('lessons_count');
+            $lessonIds    = collect($this->getAllLessonIds());
+        }
 
         $completedLessons = LessonProgress::where('user_id', $userId)
-            ->whereIn('lesson_id', $this->getAllLessonIds())
+            ->whereIn('lesson_id', $lessonIds)
             ->where('status', 'completed')
             ->count();
 

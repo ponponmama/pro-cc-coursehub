@@ -31,7 +31,10 @@ class CourseController extends Controller
             $query->where('difficulty', $request->input('difficulty'));
         }
 
-        $courses = $query->latest()->paginate(12);
+        $courses = $query->with('category', 'user')
+            ->withCount('chapters', 'enrollments')
+            ->latest()
+            ->paginate(12);
         $categories = Category::all();
 
         return view('courses.index', compact('courses', 'categories'));
