@@ -131,6 +131,7 @@ class CourseTest extends TestCase
 
     public function test_course_list_can_be_filtered_by_category(): void
     {
+        // CategoryFactory は日本語名から Str::slug() で空文字スラッグを生成し unique 制約違反になるため明示指定
         $otherCategory = Category::factory()->create(['slug' => 'other-' . uniqid()]);
 
         Course::factory()->create([
