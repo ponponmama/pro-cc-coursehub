@@ -1,0 +1,29 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          max_turns: "5"
+          direct_prompt: |
+            この PR の変更内容をレビューしてください。
+            以下の観点で問題があれば指摘してください：
+            - コーディング規約（camelCase、Form Request の使用など）
+            - セキュリティ上の問題
+            - N+1 クエリなどのパフォーマンス問題
+            - テストが不足している箇所
+            レビュー結果は日本語でコメントしてください。
