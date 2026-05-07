@@ -31,6 +31,9 @@ class CourseController extends Controller
             $query->where('difficulty', $request->input('difficulty'));
         }
 
+        // N+1解消: Blade で category->name / user->name を参照するため with() でEager Loading。
+        // chapters / enrollments は件数だけ必要なので withCount() でサブクエリ化し、
+        // コース数 × 4クエリ → 1クエリに削減。
         $courses = $query->with('category', 'user')
             ->withCount('chapters', 'enrollments')
             ->latest()
