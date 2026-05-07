@@ -3,27 +3,30 @@ name: Claude Code Review
 on:
   pull_request:
     types: [opened, synchronize]
+  issue_comment:
+    types: [created]
 
 jobs:
   claude-review:
+    if: |
+      (github.event_name == 'pull_request') ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude'))
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       pull-requests: write
+      issues: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - uses: anthropics/claude-code-action@beta
+      - uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          max_turns: "5"
-          direct_prompt: |
-            この PR の変更内容をレビューしてください。
-            以下の観点で問題があれば指摘してください：
-            - コーディング規約（camelCase、Form Request の使用など）
+          claude_args: "--max-turns 5"
+          prompt: |
+            このリポジトリの CLAUDE.md と .claude/rules/ を読み、
+            コーディング規約に従ってレビューしてください。
+            特に以下を重点的に確認してください:
+            - Form Request の使用（rules/coding.md）
+            - Policy による認可（設計方針）
+            - テストの有無
             - セキュリティ上の問題
-            - N+1 クエリなどのパフォーマンス問題
-            - テストが不足している箇所
-            レビュー結果は日本語でコメントしてください。
